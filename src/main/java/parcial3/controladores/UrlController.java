@@ -37,28 +37,43 @@ public class UrlController {
         // Redirección y registro de acceso
         app.get("/{shortUrl}", ctx -> {
             String shortUrl = ctx.pathParam("shortUrl");
+
+            // Buscar la URL original
             Url url = urlDb.findAll().stream()
                     .filter(u -> u.getShortUrl().equals(shortUrl))
                     .findFirst()
                     .orElseThrow(() -> new NotFoundResponse("Enlace no encontrado"));
 
+            // Crear registro de acceso
             Acceso acceso = new Acceso();
             acceso.setUrl(url);
-            acceso.setNavegador(obtenerNavegadorSimplificado(ctx.userAgent()));
+
+            // Tomamos el User-Agent desde la cabecera
+            String userAgent = ctx.header("User-Agent");
+            if (userAgent == null) {
+                userAgent = "";
+            }
+            acceso.setNavegador(obtenerNavegadorSimplificado(userAgent));
             acceso.setIp(ctx.ip());
-            acceso.setDominio(obtenerDominio(ctx));
-            acceso.setSistemaOperativo(obtenerSistemaOperativo(ctx.userAgent()));
+
+            // Tomamos el Host desde la cabecera
+            String hostHeader = ctx.header("Host");
+            if (hostHeader == null || hostHeader.isEmpty()) {
+                hostHeader = "localhost";
+            }
+            acceso.setDominio(obtenerDominio(hostHeader));
+            acceso.setSistemaOperativo(obtenerSistemaOperativo(userAgent));
             acceso.setFecha(LocalDateTime.now());
+
             accesoDb.crear(acceso);
 
+            // Redirigir a la URL original
             ctx.redirect(url.getUrl());
         });
 
         // Listar URLs (propias o todas si es admin)
         app.get("/KonohaLinks/urls/MisUrl", ctx -> {
-
             Usuario usuario = ctx.sessionAttribute("usuario");
-
             if (usuario == null) {
                 ctx.redirect("/login");
                 return;
@@ -75,11 +90,12 @@ public class UrlController {
 
             Map<String, Object> model = new HashMap<>();
             model.put("urls", urls);
+
             ctx.render("/templates/listar-mis-urls.html", model);
         });
 
+        // Listar URLs de la comunidad
         app.get("/KonohaLinks/urls", ctx -> {
-
             Usuario usuario = ctx.sessionAttribute("usuario");
 
             List<Url> urls = urlDb.findAll();
@@ -88,7 +104,7 @@ public class UrlController {
             model.put("urls", urls);
             model.put("usuario", usuario);
 
-            if(usuario != null) {
+            if (usuario != null) {
                 model.put("esAdmin", usuario.isAdmin());
             }
 
@@ -97,7 +113,6 @@ public class UrlController {
 
         // Estadísticas de accesos (solo admin o dueño)
         app.get("/urls/{id}/accesos", ctx -> {
-
             Usuario usuario = ctx.sessionAttribute("usuario");
 
             ObjectId urlId = new ObjectId(ctx.pathParam("id"));
@@ -121,23 +136,26 @@ public class UrlController {
             model.put("sistemasOperativosJson", mapper.writeValueAsString(sistemasOperativos));
             model.put("navegadoresJson", mapper.writeValueAsString(navegadores));
 
-
+            // Renderiza la vista
             ctx.render("/templates/listar-accesos.html", model);
-
         });
 
-
+        // Formulario para crear nueva URL
         app.get("/urls/crear", ctx -> {
             Usuario usuario = ctx.sessionAttribute("usuario");
-            if (usuario == null) ctx.redirect("/login");
-
+            if (usuario == null) {
+                ctx.redirect("/login");
+                return;
+            }
             ctx.render("/templates/crear-url.html");
         });
 
-        // Procesar creación URL
+        // Procesar creación de URL
         app.post("/urls/crear", ctx -> {
             Usuario usuario = ctx.sessionAttribute("usuario");
-            if (usuario == null) throw new UnauthorizedResponse("Debe iniciar sesión");
+            if (usuario == null) {
+                throw new UnauthorizedResponse("Debe iniciar sesión");
+            }
 
             String originalUrl = ctx.formParam("urlOriginal");
             String shortUrl = generarCodigoUnico();
@@ -152,23 +170,27 @@ public class UrlController {
             ctx.redirect("/");
         });
 
-        // Eliminar URL (solo admin o dueño)
+        // Eliminar URL (solo administradores)
         app.post("/urls/eliminar/{id}", ctx -> {
             Usuario usuario = ctx.sessionAttribute("usuario");
-            if (usuario == null) throw new UnauthorizedResponse("Debe iniciar sesión");
-
-            ObjectId urlId = new ObjectId(ctx.pathParam("id"));
-            Url url = urlDb.find(urlId);
-
-            if (!usuario.isAdmin() && !url.getUsuario().getId().equals(usuario.getId())) {
-                throw new UnauthorizedResponse("No tienes permiso");
+            if (usuario == null) {
+                throw new UnauthorizedResponse("Debe iniciar sesión");
+            }
+            // Restringir la eliminación de enlaces solo a admins
+            if (!usuario.isAdmin()) {
+                throw new UnauthorizedResponse("Solo administradores pueden eliminar enlaces");
             }
 
+            ObjectId urlId = new ObjectId(ctx.pathParam("id"));
             urlDb.eliminar(urlId);
+
             ctx.redirect("/urls");
         });
     }
 
+    /**
+     * Genera un código corto único para la URL.
+     */
     private String generarCodigoUnico() {
         String codigo;
         do {
@@ -191,43 +213,45 @@ public class UrlController {
         return sb.toString();
     }
 
-    private String obtenerDominio(Context ctx) {
-        String host = ctx.host();
-        return host.startsWith("www.") ? host.substring(4) : host;
+    /**
+     * Extrae el dominio desde la cabecera "Host".
+     */
+    private String obtenerDominio(String hostHeader) {
+        // Si el Host inicia con "www.", lo removemos
+        return hostHeader.startsWith("www.") ? hostHeader.substring(4) : hostHeader;
     }
 
+    /**
+     * Detecta el sistema operativo desde la cadena de User-Agent.
+     */
     private String obtenerSistemaOperativo(String userAgent) {
-        if (userAgent.contains("Windows")) return "Windows";
-        if (userAgent.contains("Mac")) return "MacOS";
-        if (userAgent.contains("Linux")) return "Linux";
-        if (userAgent.contains("Android")) return "Android";
-        if (userAgent.contains("iOS")) return "iOS";
+        String ua = userAgent.toLowerCase();
+        if (ua.contains("windows")) return "Windows";
+        if (ua.contains("mac")) return "MacOS";
+        if (ua.contains("linux")) return "Linux";
+        if (ua.contains("android")) return "Android";
+        if (ua.contains("ios")) return "iOS";
         return "Desconocido";
     }
 
-    public int getClicks(Url url) {
-        return accesoDb.findAll().stream()
-                .filter(acceso -> acceso.getUrl().getId().equals(url.getId()))
-                .toList()
-                .size();
-    }
-
+    /**
+     * Retorna el navegador simplificado: Chrome, Firefox, Safari, etc.
+     */
     private String obtenerNavegadorSimplificado(String userAgent) {
-        userAgent = userAgent.toLowerCase();
-
-        if (userAgent.contains("chrome") && !userAgent.contains("edg")) {
+        String ua = userAgent.toLowerCase();
+        if (ua.contains("chrome") && !ua.contains("edg")) {
             return "Chrome";
-        } else if (userAgent.contains("firefox")) {
+        } else if (ua.contains("firefox")) {
             return "Firefox";
-        } else if (userAgent.contains("safari") && !userAgent.contains("chrome")) {
+        } else if (ua.contains("safari") && !ua.contains("chrome")) {
             return "Safari";
-        } else if (userAgent.contains("edg")) {
+        } else if (ua.contains("edg")) {
             return "Edge";
-        } else if (userAgent.contains("opera")) {
+        } else if (ua.contains("opera")) {
             return "Opera";
-        } else if (userAgent.contains("crios")) { // Chrome en iOS
+        } else if (ua.contains("crios")) { // Chrome en iOS
             return "Chrome Mobile";
-        } else if (userAgent.contains("fxios")) { // Firefox en iOS
+        } else if (ua.contains("fxios")) { // Firefox en iOS
             return "Firefox Mobile";
         } else {
             return "Otro";

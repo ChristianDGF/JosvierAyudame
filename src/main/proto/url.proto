@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "parcial3.grpc";
+option java_outer_classname = "UrlProto";
+
+message UrlData {
+  string id = 1;
+  string url = 2;
+  string shortUrl = 3;
+  string userId = 4;
+  string fechaCreacion = 5;
+}
+
+message ListUrlsRequest {
+  string userId = 1;
+}
+
+message ListUrlsResponse {
+  repeated UrlData urls = 1;
+}
+
+message CreateUrlRequest {
+  string userId = 1;
+  string urlOriginal = 2;
+}
+
+message CreateUrlResponse {
+  UrlData url = 1;
+}
+
+service UrlService {
+  rpc ListUrls (ListUrlsRequest) returns (ListUrlsResponse);
+  rpc CreateUrl (CreateUrlRequest) returns (CreateUrlResponse);
+}
