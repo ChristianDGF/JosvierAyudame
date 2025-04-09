@@ -1,0 +1,73 @@
+<!-- public/html/sidebar.html -->
+<nav class="sidebar">
+    <div class="sidebar-header text-center">
+        <img src="/images/logo2.png" alt="Konoha Logo" class="logo img-fluid">
+    </div>
+
+    <div class="px-3 pt-3">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link active" href="/">
+                    <i class="bi bi-house-door me-2"></i> Inicio
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="/">
+                    <i class="bi bi-house-door me-2"></i> Urls
+                </a>
+                <a th:if="${usuario != null}" class="nav-link active" href="/KonohaLinks/urls/MisUrl">
+                    <i class="bi bi-house-door me-2"></i> Mis Urls
+                </a>
+            </li>
+            <!-- Añade más items según necesites -->
+        </ul>
+    </div>
+</nav>
+
+<style>
+
+    .nav-link {
+        color: white !important;
+        border-left: 4px solid transparent;
+        transition: all 0.3s;
+    }
+
+    .nav-link:hover {
+        background: rgba(255, 107, 0, 0.1);
+        border-left-color: #FF6B00;
+    }
+
+    .logo {
+        width: 180px;
+        transition: all 0.3s;
+    }
+
+    .main-content {
+        margin-left: 250px;
+        transition: all 0.3s;
+    }
+
+    @media (max-width: 768px) {
+        .main-content {
+            margin-left: 0;
+        }
+    }
+
+    .sidebar {
+        width: 250px;
+        height: 100vh;
+        background: #2A2A2A;
+        position: fixed;
+        transition: all 0.3s;
+        z-index: 1000;
+    }
+
+    @media (max-width: 768px) {
+        .sidebar {
+            margin-left: -250px;
+        }
+        .sidebar.active {
+            margin-left: 0;
+        }
+    }
+</style>

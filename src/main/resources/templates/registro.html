@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KonohaLinks - Registro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --naruto-orange: #FF6B00;
+            --akatsuki-black: #2A2A2A;
+            --sharingan-red: #E53935;
+        }
+
+        body {
+            background: linear-gradient(45deg, var(--akatsuki-black), var(--naruto-orange));
+            min-height: 100vh;
+            font-family: 'Arial Rounded MT Bold', sans-serif;
+        }
+
+        .konoha-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            max-width: 450px;
+            margin: 2rem auto;
+            padding: 2rem;
+        }
+
+        .logo-container {
+            text-align: center;
+        }
+
+        .konoha-logo {
+            width: 300px; /* Logo más grande */
+        }
+
+        .btn-konoha {
+            background: var(--naruto-orange);
+            color: white;
+            font-weight: bold;
+            padding: 12px 40px;
+            border-radius: 25px;
+            transition: all 0.3s;
+        }
+
+        .btn-konoha:hover {
+            background: var(--sharingan-red);
+            transform: translateY(-2px);
+        }
+
+        .form-control {
+            border-radius: 10px;
+            padding: 12px 20px;
+            border: 2px solid #ddd;
+        }
+
+        .form-control:focus {
+            border-color: var(--naruto-orange);
+            box-shadow: 0 0 0 0.25rem rgba(255, 107, 0, 0.25);
+        }
+
+        .ninja-link {
+            color: var(--akatsuki-black);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .ninja-link:hover {
+            color: var(--sharingan-red);
+        }
+
+        .password-requirements {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="row justify-content-center min-vh-100 align-items-center">
+        <div class="col-lg-5 col-md-7">
+            <div class="konoha-card">
+                <div class="logo-container">
+                    <img src="/images/logo2.png" alt="Konoha Logo" class="konoha-logo">
+                    <p class="text-muted">Únete a la Aldea Oculta</p>
+                </div>
+
+                <form action="/registro" method="POST">
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre Completo</label>
+                        <input type="text" class="form-control" id="nombre" name="nombre"
+                               placeholder="Ej: Naruto Uzumaki" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Nombre de Usuario</label>
+                        <input type="text" class="form-control" id="username" name="username"
+                               placeholder="Crea tu nombre ninja" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Contraseña</label>
+                        <input type="password" class="form-control" id="password" name="password"
+                               placeholder="••••••••">
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-konoha">Registrarse</button>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <p class="mb-0">¿Ya tienes cuenta?
+                            <a href="/login" class="ninja-link">Inicia Sesión</a>
+                        </p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

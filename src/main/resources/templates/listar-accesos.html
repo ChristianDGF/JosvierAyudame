@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KonohaLinks - Estadísticas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/js/loadSidebar.js" defer></script>
+    <style>
+        :root {
+            --naruto-orange: #FF6B00;
+            --akatsuki-black: #2A2A2A;
+            --sharingan-red: #C00000;
+        }
+
+        body {
+            background: linear-gradient(45deg, var(--akatsuki-black), #1a1a1a);
+            min-height: 100vh;
+            font-family: 'Arial Rounded MT Bold', sans-serif;
+            color: white;
+        }
+
+        .stats-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 107, 0, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 1rem;
+            height: 400px;
+        }
+
+        .stat-number {
+            color: var(--naruto-orange);
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<script th:inline="javascript">
+    /*[# th:if="${accesos.empty}"]*/
+    Swal.fire({
+        icon: 'info',
+        title: 'Sin estadísticas',
+        text: 'No hay accesos registrados para esta URL',
+        confirmButtonColor: '#FF6B00'
+    }).then(() => {
+        window.location.back(); // Redirige a la lista de URLs
+        // O usar: history.back(); para volver a la página anterior
+    });
+    /*[/]*/
+</script>
+
+<!-- Contenido principal -->
+<div class="main-content p-4" style="margin-left: 250px;">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <h2 class="text-orange">Estadísticas de <span th:text="'konohaLinks/' + ${url.shortUrl}"></span></h2>
+            <a href="/urls" class="btn btn-konoha">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+
+        <!-- Encabezado con datos principales -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="stats-card text-center">
+                    <div class="small">Total de accesos</div>
+                    <div class="stat-number" th:text="${accesos.size()}">0</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card text-center">
+                    <div class="small">Último acceso</div>
+                    <div th:if="${!accesos.isEmpty}" class="stat-number" th:text="${#temporals.format(accesos[0].fecha, 'dd/MM/yyyy')}"></div>
+                    <div th:if="${!accesos.isEmpty}" class="" th:text="${#temporals.format(accesos[0].fecha, 'HH:mm')}"></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card text-center">
+                    <div class="small">URL Original</div>
+                    <div class="text-truncate text-orange" th:text="${url.url}"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="stats-card">
+                    <h5 class="text-orange mb-4"><i class="bi bi-pie-chart-fill"></i> Sistemas Operativos</h5>
+                    <div class="chart-container">
+                        <canvas id="osChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="stats-card">
+                    <h5 class="text-orange mb-4"><i class="bi bi-browser-edge"></i> Navegadores</h5>
+                    <div class="chart-container">
+                        <canvas id="browserChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script th:inline="javascript">
+    // Configuración común para los gráficos
+    const chartOptions = {
+        maintainAspectRatio: false,
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'right',
+                labels: {
+                    color: '#FFF',
+                    font: {
+                        size: 14
+                    }
+                }
+            },
+            tooltip: {
+                enabled: true,
+                backgroundColor: 'rgba(0,0,0,0.7)'
+            }
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            // Parsear los JSONs correctamente escapados
+            const sistemasOperativos = JSON.parse(/*[[${sistemasOperativosJson}]]*/ '{}');
+            const navegadores = JSON.parse(/*[[${navegadoresJson}]]*/ '{}');
+
+            console.log("Datos reales - Sistemas Operativos:", sistemasOperativos);
+            console.log("Datos reales - Navegadores:", navegadores);
+
+            // Colores para los gráficos
+            const backgroundColors = [
+                '#FF6B00', '#C00000', '#2A2A2A', '#4A4A4A', '#6A6A6A',
+                '#8A8A8A', '#AAAAAA', '#CCCCCC', '#EEEEEE', '#FFFFFF'
+            ];
+
+            // Función para crear gráficos
+            function crearGrafico(elementId, type, labels, data) {
+                const ctx = document.getElementById(elementId);
+                if (!ctx) {
+                    console.error(`Elemento ${elementId} no encontrado`);
+                    return;
+                }
+
+                return new Chart(ctx, {
+                    type: type,
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: backgroundColors,
+                            borderColor: 'rgba(255, 255, 255, 0.2)',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: chartOptions
+                });
+            }
+
+            // Crear gráficos solo si hay datos
+            if (Object.keys(sistemasOperativos).length > 0) {
+                crearGrafico(
+                    'osChart',
+                    'doughnut',
+                    Object.keys(sistemasOperativos),
+                    Object.values(sistemasOperativos)
+                );
+            } else {
+                console.warn("No hay datos de sistemas operativos");
+            }
+
+            if (Object.keys(navegadores).length > 0) {
+                crearGrafico(
+                    'browserChart',
+                    'pie',
+                    Object.keys(navegadores),
+                    Object.values(navegadores)
+                );
+            } else {
+                console.warn("No hay datos de navegadores");
+            }
+
+        } catch (error) {
+            console.error("Error al crear gráficos:", error);
+        }
+    });
+</script>
+</body>
+</html>

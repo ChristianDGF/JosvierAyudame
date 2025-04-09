@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KonohaLinks - Urls de la comunidad</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="/js/loadSidebar.js" defer></script>
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        :root {
+            --naruto-orange: #FF6B00;
+            --akatsuki-black: #2A2A2A;
+            --sharingan-red: #C00000;
+        }
+
+        body {
+            background: linear-gradient(45deg, var(--akatsuki-black), #1a1a1a);
+            min-height: 100vh;
+            font-family: 'Arial Rounded MT Bold', sans-serif;
+            color: white;
+        }
+
+        .btn-konoha {
+            background: var(--naruto-orange);
+            color: white;
+            transition: all 0.3s;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 25px;
+        }
+
+        .btn-konoha:hover {
+            background: var(--sharingan-red);
+            transform: translateY(-2px);
+        }
+
+        .url-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 107, 0, 0.2);
+            backdrop-filter: blur(10px);
+            margin-bottom: 1.5rem;
+            transition: transform 0.3s;
+            overflow: hidden;
+        }
+
+        .url-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .copy-btn {
+            background: rgba(255, 107, 0, 0.2);
+            color: var(--naruto-orange);
+            border: none;
+            border-radius: 8px;
+            padding: 5px 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex-shrink: 0;
+            margin-left: 0.5rem;
+        }
+
+        .copy-btn:hover {
+            background: var(--naruto-orange);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+<!-- Sidebar se cargará aquí via JavaScript -->
+
+<!-- Contenido principal -->
+<div class="main-content p-4" style="margin-left: 250px;">
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <h2 class="text-orange">Urls de la comunidad</h2>
+        <div th:if="${usuario != null}" class="d-flex gap-3">
+            <a th:if="${esAdmin}" href="/usuarios" class="btn btn-konoha">
+                <i class="bi bi-people-fill"></i> Usuarios
+            </a>
+            <a href="/urls/crear" class="btn btn-konoha">
+                <i class="bi bi-plus-lg"></i> Nueva URL
+            </a>
+            <a href="/logout" class="btn btn-konoha">
+                <i class="bi bi-box-arrow-right"></i> Salir
+            </a>
+        </div>
+    </div>
+
+    <!-- Contenedor de URLs -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        <div class="col" th:each="url : ${urls}">
+            <div class="url-card p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="flex-grow-1" style="min-width: 0;"> <!-- Añadido min-width: 0 para contener el texto -->
+                        <div class="small mb-2">
+                            <i class="bi bi-calendar me-2"></i>
+                            <span th:text="${#temporals.format(url.fechaCreacion, 'dd/MM/yyyy')}"></span>
+                        </div>
+                        <div class="mb-3">
+                            <div class="mb-1">
+                                <strong class="text-orange">URL:</strong>
+                                <div class="text-truncate text-orange" style="max-width: 100%;" th:text="${url.url}"></div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 mt-2">
+                                <strong class="text-white flex-shrink-0">URL Acortada:</strong>
+                                <div class="d-flex align-items-center" style="min-width: 0;">
+                                    <a th:href="@{/{shortUrl}(shortUrl=${url.shortUrl})}"
+                                       class="text-decoration-none text-white text-truncate"
+                                       target="_blank"
+                                       style="max-width: 120px;">
+                                        <span th:text="'konohaLinks/' + ${url.shortUrl}"></span>
+                                    </a>
+                                    <button class="copy-btn flex-shrink-0" onclick="copiarUrl(this)">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div th:if="${usuario != null}" class="d-flex flex-column gap-2 ms-2">
+                        <a th:href="@{/urls/{id}/accesos(id=${url.id})}"
+                           class="btn btn-sm btn-outline-orange">
+                            <i class="bi bi-bar-chart-line"></i>
+                        </a>
+                        <button th:if="${(usuario.id == url.usuario.id) || esAdmin}" class="btn btn-sm btn-danger"
+                                th:data-id="${url.id.toString()}"
+                                onclick="confirmarEliminacion(this)">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div th:if="${esAdmin}" class="text-muted small">
+                    <i class="bi bi-person-circle me-2"></i>
+                    <span th:text="${url.usuario.username}"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function copiarUrl(button) {
+        const urlElement = button.previousElementSibling;
+        const fullUrl = urlElement.href;
+        navigator.clipboard.writeText(fullUrl).then(() => {
+            Swal.fire({
+                imageUrl: "/images/kakashi.jpg",
+                imageWidth: 200,
+                imageHeight: 200,
+                title: '¡Copiado!',
+                text: 'La URL se ha copiado al portapapeles',
+                confirmButtonColor: '#FF6B00',
+                showConfirmButton: false,
+                timer: 1500
+            });
+        });
+    }
+
+    function confirmarEliminacion(button) {
+        const urlId = button.getAttribute('data-id');
+        Swal.fire({
+            title: '¿Eliminar URL?',
+            text: "¡No podrás revertir esto!",
+            imageUrl: "/images/kamui.gif",
+            imageWidth: 400,
+            imageHeight: 200,
+            showCancelButton: true,
+            confirmButtonColor: '#FF6B00',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/urls/eliminar/${urlId}`, { method: 'POST' })
+                    .then(() => window.location.reload());
+            }
+        });
+    }
+</script>
+</body>
+</html>

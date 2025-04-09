@@ -1,0 +1,39 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'org.example'
+version = '1.0-SNAPSHOT'
+
+mainClassName = "parcial3.main.Main"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+
+    //Javalin
+    implementation("io.javalin:javalin:6.4.0")
+    implementation 'io.javalin:javalin-rendering:6.4.0'
+    implementation 'org.thymeleaf:thymeleaf:3.1.2.RELEASE'
+
+    //SpringFramework
+    implementation 'org.springframework.data:spring-data-commons:3.2.0'
+
+    //MONGO - DB
+    implementation 'org.mongodb:mongodb-driver-sync:4.11.1' // Versión más reciente
+    implementation 'org.slf4j:slf4j-api:2.0.7' // SLF4J API
+    implementation 'ch.qos.logback:logback-classic:1.4.11'
+    implementation 'org.mongodb:bson:4.9.0'
+
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+}
+
+test {
+    useJUnitPlatform()
+}

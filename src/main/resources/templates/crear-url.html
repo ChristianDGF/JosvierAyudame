@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KonohaLinks - Acortar URL</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="/js/loadSidebar.js" defer></script>
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        :root {
+            --naruto-orange: #FF6B00;
+            --akatsuki-black: #2A2A2A;
+            --sharingan-red: #C00000;
+        }
+
+        body {
+            background: linear-gradient(45deg, var(--akatsuki-black), #1a1a1a);
+            min-height: 100vh;
+            font-family: 'Arial Rounded MT Bold', sans-serif;
+            color: white;
+        }
+
+        .konoha-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 107, 0, 0.2);
+            backdrop-filter: blur(10px);
+            height: fit-content;
+        }
+
+        .preview-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 107, 0, 0.2);
+            backdrop-filter: blur(10px);
+            height: 100%;
+            min-height: 400px;
+            display: none;
+        }
+
+        .btn-konoha {
+            background: var(--naruto-orange);
+            color: white;
+            transition: all 0.3s;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+        }
+
+        .btn-konoha:hover {
+            background: var(--sharingan-red);
+            transform: translateY(-2px);
+        }
+
+        .form-control {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 107, 0, 0.3);
+            color: white;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--naruto-orange);
+            box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.2);
+            color: white;
+        }
+
+        .preview-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .preview-title {
+            color: var(--naruto-orange);
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .preview-description {
+            color: #ddd;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+<!-- Sidebar se cargará aquí via JavaScript -->
+
+<!-- Contenido principal -->
+<div class="main-content p-4" style="margin-left: 250px;">
+    <div class="container">
+        <div class="row g-4">
+            <!-- Formulario -->
+            <div class="col-lg-6">
+                <div class="konoha-card p-4">
+                    <div class="text-center mb-4">
+                        <img src="/images/a.png" alt="Konoha Logo" style="width: 250px;">
+                        <h3 class="text-orange mt-2">Forjar nueva URL</h3>
+                        <p>Crea tu enlace ninja en segundos</p>
+                    </div>
+
+                    <form id="formUrl" action="/urls/crear" method="POST">
+                        <div class="mb-3">
+                            <label for="urlOriginal" class="form-label">URL Original</label>
+                            <div class="input-group">
+                                <input type="url"
+                                       class="form-control"
+                                       id="urlOriginal"
+                                       name="urlOriginal"
+                                       required
+                                       placeholder="https://ejemplo.com"
+                                       pattern="https?://.+">
+                                <button type="button" id="btnPreview" class="btn btn-konoha">
+                                    <i class="bi bi-eye-fill"></i> Previsualizar
+                                </button>
+                            </div>
+                            <div class="mt-2">Debe comenzar con http:// o https://</div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-konoha">
+                                <i class="bi bi-magic"></i> Crear URL Ninja
+                            </button>
+                            <a href="/" class="btn btn-outline-orange">
+                                <i class="bi bi-arrow-left"></i> Volver al inicio
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Preview -->
+            <div class="col-lg-6">
+                <div id="previewContainer" class="preview-card p-4">
+                    <div class="spinner-border text-orange" role="status" id="loadingSpinner">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <img src="" class="preview-image" id="previewImage">
+                    <div class="preview-title" id="previewTitle"></div>
+                    <div class="preview-description" id="previewDescription"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // El script se mantiene igual que en la versión anterior
+    document.getElementById('btnPreview').addEventListener('click', async () => {
+        const urlInput = document.getElementById('urlOriginal');
+        const previewContainer = document.getElementById('previewContainer');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const previewImage = document.getElementById('previewImage');
+        const previewTitle = document.getElementById('previewTitle');
+        const previewDescription = document.getElementById('previewDescription');
+
+        if (!urlInput.checkValidity()) {
+            Swal.fire({
+                icon: 'error',
+                title: 'URL inválida',
+                text: 'Por favor ingresa una URL válida',
+                confirmButtonColor: '#FF6B00'
+            });
+            return;
+        }
+
+        try {
+            previewContainer.style.display = 'block';
+            loadingSpinner.style.display = 'block';
+            previewImage.style.display = 'none';
+            previewTitle.textContent = '';
+            previewDescription.textContent = '';
+
+            const response = await fetch(`https://api.linkpreview.net/?key=e68bc35f41c132ac38d5c9bf66049e08&q=${encodeURIComponent(urlInput.value)}`);
+            const data = await response.json();
+
+            if (data.error) throw new Error(data.error);
+
+            previewImage.src = data.image || '';
+            previewTitle.textContent = data.title || 'Sin título';
+            previewDescription.textContent = data.description || 'Sin descripción disponible';
+
+            previewImage.style.display = data.image ? 'block' : 'none';
+            loadingSpinner.style.display = 'none';
+
+        } catch (error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error en la previsualización',
+                text: error.message || 'No se pudo cargar la previsualización',
+                confirmButtonColor: '#FF6B00'
+            });
+            previewContainer.style.display = 'none';
+            loadingSpinner.style.display = 'none';
+        }
+    });
+
+    // Resto del script se mantiene igual
+</script>
+</body>
+</html>
